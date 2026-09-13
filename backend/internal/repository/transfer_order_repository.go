@@ -15,10 +15,12 @@ import (
 type TransferOrderRepository interface {
 	Create(order *model.TransferOrder) error
 	FindByID(id uint) (*model.TransferOrder, error)
+	FindByIDTx(tx *gorm.DB, id uint) (*model.TransferOrder, error)
 	List(page, pageSize int, storeID uint, status constants.TransferStatus) ([]model.TransferOrder, int64, error)
 	Update(order *model.TransferOrder) error
 	UpdateTx(tx *gorm.DB, order *model.TransferOrder) error
 	TransitionStatusTx(tx *gorm.DB, id uint, from, to constants.TransferStatus) error
+	AddReceivedQuantityTx(tx *gorm.DB, id uint, qty int) error
 }
 
 type transferOrderRepository struct {
@@ -38,8 +40,12 @@ func (r *transferOrderRepository) Create(order *model.TransferOrder) error {
 }
 
 func (r *transferOrderRepository) FindByID(id uint) (*model.TransferOrder, error) {
+	return r.FindByIDTx(nil, id)
+}
+
+func (r *transferOrderRepository) FindByIDTx(tx *gorm.DB, id uint) (*model.TransferOrder, error) {
 	var o model.TransferOrder
-	err := r.db.Preload("FromStore").Preload("ToStore").Preload("SKU").First(&o, id).Error
+	err := dbOrTx(r.db, tx).Preload("FromStore").Preload("ToStore").Preload("SKU").First(&o, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("find transfer order by id: %w", util.ErrNotFound)
 	}
@@ -89,6 +95,25 @@ func (r *transferOrderRepository) TransitionStatusTx(tx *gorm.DB, id uint, from,
 	}
 	if res.RowsAffected == 0 {
 		return fmt.Errorf("transition transfer order status: %w", util.ErrConflict)
+	}
+	return nil
+}
+
+// AddReceivedQuantityTx 原子累加已收数量：仅当单据处于已发货且累计不超调拨数量时生效，
+// 防止并发/重复提交导致超收；状态由 CASE 基于行当前值计算，收满即置为已收货。
+func (r *transferOrderRepository) AddReceivedQuantityTx(tx *gorm.DB, id uint, qty int) error {
+	res := dbOrTx(r.db, tx).Model(&model.TransferOrder{}).
+		Where("id = ? AND status = ? AND received_quantity + ? <= quantity", id, constants.TransferShipped, qty).
+		Updates(map[string]interface{}{
+			"received_quantity": gorm.Expr("received_quantity + ?", qty),
+			"status": gorm.Expr("CASE WHEN received_quantity + ? >= quantity THEN ? ELSE ? END",
+				qty, constants.TransferReceived, constants.TransferShipped),
+		})
+	if res.Error != nil {
+		return fmt.Errorf("add transfer received quantity: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return fmt.Errorf("add transfer received quantity: %w", util.ErrConflict)
 	}
 	return nil
 }

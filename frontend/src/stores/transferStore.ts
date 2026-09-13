@@ -35,8 +35,8 @@ export const useTransferStore = defineStore('transfer', () => {
     await fetchList()
   }
 
-  async function receive(id: number) {
-    await receiveTransfer(id)
+  async function receive(id: number, data: { quantity: number; remark?: string }) {
+    await receiveTransfer(id, data)
     await fetchList()
   }
 

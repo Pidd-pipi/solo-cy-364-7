@@ -27,7 +27,7 @@ export function useTransfers() {
 
   async function confirm(id: number) { await confirmTransfer(id); await load() }
   async function ship(id: number) { await shipTransfer(id); await load() }
-  async function receive(id: number) { await receiveTransfer(id); await load() }
+  async function receive(id: number, data: { quantity: number; remark?: string }) { await receiveTransfer(id, data); await load() }
   async function cancel(id: number) { await cancelTransfer(id); await load() }
 
   onMounted(load)

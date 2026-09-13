@@ -80,9 +80,44 @@ func (h *TransferOrderHandler) Ship(c *gin.Context) {
 	h.transition(c, h.transferSvc.Ship, constants.MsgTransferShipSuccess)
 }
 
-// Receive 确认收货。
+// Receive 分批收货：填写本次实收数量与备注。
 func (h *TransferOrderHandler) Receive(c *gin.Context) {
-	h.transition(c, h.transferSvc.Receive, constants.MsgTransferReceiveSuccess)
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.Error(util.Validation("无效的调拨单ID", err))
+		return
+	}
+	var req dto.TransferReceiveRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(util.Validation(constants.MsgInvalidRequest, err))
+		return
+	}
+	order, err := h.transferSvc.Receive(uint(id), req.Quantity, req.Remark)
+	if err != nil {
+		c.Error(fmt.Errorf("handler receive transfer[id=%d] qty[%d]: %w", id, req.Quantity, err))
+		return
+	}
+	// 响应文案与当前状态一致：收满为已收货，未收满仍为已发货
+	msg := constants.MsgTransferPartialReceive
+	if order.Status == constants.TransferReceived {
+		msg = constants.MsgTransferReceiveSuccess
+	}
+	util.OKMessage(c, msg, order)
+}
+
+// ListReceipts 调拨单收货明细列表。
+func (h *TransferOrderHandler) ListReceipts(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		c.Error(util.Validation("无效的调拨单ID", err))
+		return
+	}
+	receipts, err := h.transferSvc.ListReceipts(uint(id))
+	if err != nil {
+		c.Error(fmt.Errorf("handler list transfer receipts[id=%d]: %w", id, err))
+		return
+	}
+	util.OK(c, gin.H{"list": receipts, "total": len(receipts)})
 }
 
 // Cancel 取消。

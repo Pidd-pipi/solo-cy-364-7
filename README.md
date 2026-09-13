@@ -26,7 +26,7 @@ docker compose up -d --build
 
 - 多门店 SKU 主数据统一维护与批量导入
 - 门店库存实时同步、安全库存阈值与低库存预警
-- 调拨申请 → 审批确认 → 发货 → 收货全流程状态机
+- 调拨申请 → 审批确认 → 发货 → 分批收货全流程状态机（累计收满自动完结）
 - 出入库明细（采购/调拨/销售/损耗）、周期盘点与盘盈盘亏计算
 - 滞销商品分析与智能补货建议报表
 - JWT 认证 + RBAC 角色权限（总部/店长/管理员）+ 接口限流
@@ -142,8 +142,9 @@ cy-364/
 | POST | /api/v1/transfers | 创建调拨申请 | 店长/管理员/总部，严格限流 |
 | PUT | /api/v1/transfers/:id/confirm | 审批确认 | 管理员/总部 |
 | PUT | /api/v1/transfers/:id/ship | 发货并扣减调出库存 | 店长/管理员/总部 |
-| PUT | /api/v1/transfers/:id/receive | 收货并增加调入库存 | 店长/管理员/总部 |
-| PUT | /api/v1/transfers/:id/cancel | 取消调拨单 | 店长/管理员/总部 |
+| PUT | /api/v1/transfers/:id/receive | 分批收货：按本次实收数量增加调入库存并生成调拨入库记录与收货明细 | 店长/管理员/总部 |
+| GET | /api/v1/transfers/:id/receipts | 调拨单收货明细列表 | 登录 |
+| PUT | /api/v1/transfers/:id/cancel | 取消调拨单（已发货取消时未收部分退回调出门店，收满后不可取消） | 店长/管理员/总部 |
 | GET | /api/v1/records | 出入库记录分页列表 | 登录 |
 | GET | /api/v1/records/export | 导出出入库记录 | 登录 |
 | POST | /api/v1/records | 创建出入库记录并调整库存 | 店长/管理员/总部 |
@@ -156,8 +157,8 @@ cy-364/
 ## 枚举出现位置清单
 
 ### TransferStatus（调拨单状态）
-- 后端：`backend/internal/constants/transfer.go`（定义 + Valid + TransferStatusFlow + CanTransfer）、`backend/internal/model/transfer_order.go`（GORM 模型）、`backend/internal/service/transfer_order_service.go`（状态机）、`backend/internal/handler/transfer_order_handler.go`（流转接口）、`backend/internal/util/formatters.go`（状态文本）、`backend/internal/constants/log_templates.go`（日志模板）、`backend/internal/constants/error_codes.go`/`messages.go`（文案）
-- 前端：`frontend/src/constants/transfer.ts`（定义 + 文案 + 流转）、`frontend/src/types/index.ts`（类型）、`frontend/src/components/common/TransferStatusBadge.vue`（状态徽章）、`frontend/src/pages/Transfers.vue`（按钮显隐与筛选）、`frontend/src/api/transferOrder.ts`
+- 后端：`backend/internal/constants/transfer.go`（定义 + Valid + TransferStatusFlow + CanTransfer）、`backend/internal/model/transfer_order.go`（GORM 模型，含 received_quantity 累计收货字段）、`backend/internal/repository/transfer_order_repository.go`（状态流转 + 原子累计收货）、`backend/internal/service/transfer_order_service.go`（状态机 + 分批收货）、`backend/internal/handler/transfer_order_handler.go`（流转接口）、`backend/internal/util/formatters.go`（状态文本）、`backend/internal/constants/log_templates.go`（日志模板）、`backend/internal/constants/error_codes.go`/`messages.go`（文案）
+- 前端：`frontend/src/constants/transfer.ts`（定义 + 文案 + 流转）、`frontend/src/types/index.ts`（类型）、`frontend/src/components/common/TransferStatusBadge.vue`（状态徽章）、`frontend/src/pages/Transfers.vue`（按钮显隐与筛选、分批收货弹窗）、`frontend/src/api/transferOrder.ts`
 
 ### StockRecordType（出入库类型）
 - 后端：`backend/internal/constants/stock_record.go`（定义 + Valid + StockDirection）、`backend/internal/model/stock_record.go`（GORM 模型）、`backend/internal/service/stock_record_service.go`、`backend/internal/handler/stock_record_handler.go`、`backend/internal/util/formatters.go`（类型文本）、`backend/internal/constants/log_templates.go`、`backend/internal/repository/stock_record_repository.go`

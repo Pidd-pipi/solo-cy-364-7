@@ -54,8 +54,17 @@ export interface TransferOrder {
   sku_id: number
   sku?: SKU
   quantity: number
+  received_quantity: number
   reason: string
   status: TransferStatusValue
+  created_at: string
+}
+
+export interface TransferReceipt {
+  id: number
+  transfer_order_id: number
+  quantity: number
+  remark: string
   created_at: string
 }
 

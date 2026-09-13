@@ -82,6 +82,11 @@ function openCreate() {
   dialogVisible.value = true
 }
 
+function openImport() {
+  importText.value = ''
+  importVisible.value = true
+}
+
 function openEdit(row: SKU) {
   editing.value = row
   Object.assign(form, { code: row.code, name: row.name, spec: row.spec, barcode: row.barcode, category: row.category, unit: row.unit })

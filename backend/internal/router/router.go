@@ -84,7 +84,7 @@ func (r *Router) connectDB() error {
 func (r *Router) migrate() error {
 	if err := r.db.AutoMigrate(
 		&model.User{}, &model.Store{}, &model.SKU{}, &model.StoreInventory{},
-		&model.TransferOrder{}, &model.StockRecord{}, &model.Stocktake{},
+		&model.TransferOrder{}, &model.TransferReceipt{}, &model.StockRecord{}, &model.Stocktake{},
 	); err != nil {
 		return fmt.Errorf("auto migrate: %w", err)
 	}
@@ -115,6 +115,7 @@ func (r *Router) registerV1(v1 *gin.RouterGroup) {
 	skuRepo := repository.NewSKURepository(r.db)
 	invRepo := repository.NewStoreInventoryRepository(r.db)
 	transferRepo := repository.NewTransferOrderRepository(r.db)
+	receiptRepo := repository.NewTransferReceiptRepository(r.db)
 	recordRepo := repository.NewStockRecordRepository(r.db)
 
 	userSvc := service.NewUserService(userRepo, r.logger, r.cfg.JWTSecret, r.cfg.TokenTTLHours)
@@ -122,7 +123,7 @@ func (r *Router) registerV1(v1 *gin.RouterGroup) {
 	skuSvc := service.NewSKUService(skuRepo, r.logger)
 	invSvc := service.NewStoreInventoryService(invRepo, skuRepo, r.db, r.logger)
 	recordSvc := service.NewStockRecordService(recordRepo, invRepo, storeRepo, skuRepo, invSvc, r.db, r.logger)
-	transferSvc := service.NewTransferOrderService(transferRepo, invSvc, recordSvc, r.db, r.logger)
+	transferSvc := service.NewTransferOrderService(transferRepo, receiptRepo, invSvc, recordSvc, r.db, r.logger)
 
 	userHandler := handler.NewUserHandler(userSvc)
 	storeHandler := handler.NewStoreHandler(storeSvc)

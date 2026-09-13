@@ -27,6 +27,8 @@ const (
 	LogTransferConfirmSuccess = "TRANSFER_ORDER_CONFIRM_SUCCESS"
 	LogTransferShipSuccess    = "TRANSFER_ORDER_SHIP_SUCCESS"
 	LogTransferReceiveSuccess = "TRANSFER_ORDER_RECEIVE_SUCCESS"
+	LogTransferReceiveExceed  = "TRANSFER_ORDER_RECEIVE_EXCEED"
+	LogTransferReceiptListed  = "TRANSFER_RECEIPT_LIST_QUERIED"
 	LogTransferCancelSuccess  = "TRANSFER_ORDER_CANCEL_SUCCESS"
 	LogTransferStatusInvalid  = "TRANSFER_ORDER_STATUS_INVALID"
 	LogTransferListQueried    = "TRANSFER_ORDER_LIST_QUERIED"

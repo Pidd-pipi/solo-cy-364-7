@@ -16,5 +16,6 @@ func registerTransferRoutes(v1 *gin.RouterGroup, h *handler.TransferOrderHandler
 	transfers.PUT("/:id/confirm", middleware.RequireRole(constants.RoleAdmin, constants.RoleHQ), h.Confirm)
 	transfers.PUT("/:id/ship", middleware.RequireRole(managerRoles...), h.Ship)
 	transfers.PUT("/:id/receive", middleware.RequireRole(managerRoles...), h.Receive)
+	transfers.GET("/:id/receipts", h.ListReceipts)
 	transfers.PUT("/:id/cancel", middleware.RequireRole(managerRoles...), h.Cancel)
 }

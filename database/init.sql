@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS transfer_orders (
     to_store_id BIGINT NOT NULL,
     sku_id BIGINT NOT NULL,
     quantity INT NOT NULL,
+    received_quantity INT NOT NULL DEFAULT 0,
     reason VARCHAR(255) DEFAULT '',
     status VARCHAR(16) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -63,6 +64,18 @@ CREATE TABLE IF NOT EXISTS transfer_orders (
 CREATE INDEX IF NOT EXISTS idx_transfer_orders_from ON transfer_orders(from_store_id);
 CREATE INDEX IF NOT EXISTS idx_transfer_orders_to ON transfer_orders(to_store_id);
 CREATE INDEX IF NOT EXISTS idx_transfer_orders_status ON transfer_orders(status);
+-- 兼容已有库：幂等补充分批收货字段
+ALTER TABLE transfer_orders ADD COLUMN IF NOT EXISTS received_quantity INT NOT NULL DEFAULT 0;
+
+-- 调拨收货明细：每次分批收货一条记录
+CREATE TABLE IF NOT EXISTS transfer_receipts (
+    id BIGSERIAL PRIMARY KEY,
+    transfer_order_id BIGINT NOT NULL,
+    quantity INT NOT NULL,
+    remark VARCHAR(255) DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_transfer_receipts_order ON transfer_receipts(transfer_order_id);
 
 CREATE TABLE IF NOT EXISTS stock_records (
     id BIGSERIAL PRIMARY KEY,

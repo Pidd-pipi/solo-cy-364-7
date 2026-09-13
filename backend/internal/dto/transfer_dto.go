@@ -8,3 +8,9 @@ type TransferCreateRequest struct {
 	Quantity    int    `json:"quantity" binding:"required,min=1"`
 	Reason      string `json:"reason" binding:"max=255"`
 }
+
+// TransferReceiveRequest 分批收货请求：本次实收数量与备注。
+type TransferReceiveRequest struct {
+	Quantity int    `json:"quantity" binding:"required,min=1"`
+	Remark   string `json:"remark" binding:"max=255"`
+}

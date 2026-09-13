@@ -21,6 +21,8 @@ const (
 	MsgTransferConfirmSuccess = "调拨单已确认"
 	MsgTransferShipSuccess    = "调拨单已发货"
 	MsgTransferReceiveSuccess = "调拨单已收货"
+	MsgTransferPartialReceive = "本次收货成功，调拨单未收满"
+	MsgTransferReceiveExceed  = "累计收货数量不能超过调拨数量"
 	MsgTransferCancelSuccess  = "调拨单已取消"
 	MsgRecordCreatedSuccess   = "出入库记录已创建"
 	MsgStocktakeSuccess       = "盘点完成，盘盈盘亏已计算"

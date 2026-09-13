@@ -16,6 +16,7 @@ var (
 	ErrValidation     = errors.New("validation failed")
 	ErrRateLimited    = errors.New("rate limited")
 	ErrStockNotEnough = errors.New("stock not enough")
+	ErrReceiveExceed  = errors.New("receive quantity exceed")
 )
 
 // AppError 业务错误：携带业务码与 HTTP 状态码，由 error_handler 统一转 JSON。
@@ -92,6 +93,8 @@ func AsAppError(err error) *AppError {
 		return NewAppError(429, constants.CodeRateLimited, constants.MsgRateLimited, err)
 	case errors.Is(err, ErrStockNotEnough):
 		return BadRequest(constants.MsgStockNotEnough, err)
+	case errors.Is(err, ErrReceiveExceed):
+		return BadRequest(constants.MsgTransferReceiveExceed, err)
 	}
 	return Internal(constants.MsgInternalError, err)
 }

@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PageResult, TransferOrder } from '@/types'
+import type { PageResult, TransferOrder, TransferReceipt } from '@/types'
 import type { TransferStatusValue } from '@/constants/transfer'
 
 export function listTransfers(params: { page?: number; page_size?: number; store_id?: number; status?: TransferStatusValue } = {}): Promise<PageResult<TransferOrder>> {
@@ -18,8 +18,12 @@ export function shipTransfer(id: number): Promise<TransferOrder> {
   return request.put(`/transfers/${id}/ship`)
 }
 
-export function receiveTransfer(id: number): Promise<TransferOrder> {
-  return request.put(`/transfers/${id}/receive`)
+export function receiveTransfer(id: number, data: { quantity: number; remark?: string }): Promise<TransferOrder> {
+  return request.put(`/transfers/${id}/receive`, data)
+}
+
+export function listTransferReceipts(id: number): Promise<{ list: TransferReceipt[]; total: number }> {
+  return request.get(`/transfers/${id}/receipts`)
 }
 
 export function cancelTransfer(id: number): Promise<TransferOrder> {
