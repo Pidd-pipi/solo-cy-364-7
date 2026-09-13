@@ -1,0 +1,66 @@
+name: ldstoreinventory
+
+services:
+  db:
+    image: postgres:15
+    container_name: ${COMPOSE_PROJECT_NAME:-ldstoreinventory}_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ldstoreinventory_db}
+      POSTGRES_USER: ${DB_USER:-ldstoreinventory_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-ldstoreinventory_pwd}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ldstoreinventory_user} -d ${DB_NAME:-ldstoreinventory_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-ldstoreinventory}_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      SERVER_PORT: "8080"
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_USER: ${DB_USER:-ldstoreinventory_user}
+      DB_PASSWORD: ${DB_PASSWORD:-ldstoreinventory_pwd}
+      DB_NAME: ${DB_NAME:-ldstoreinventory_db}
+      JWT_SECRET: ${JWT_SECRET:-change_me_to_a_long_random_string}
+      TOKEN_TTL_HOURS: ${TOKEN_TTL_HOURS:-72}
+      RATE_LIMIT: ${RATE_LIMIT:-120}
+      RATE_WINDOW_SEC: ${RATE_WINDOW_SEC:-60}
+    ports:
+      - "${BACKEND_PORT:-29504}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-ldstoreinventory}_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-28504}:80"
+
+volumes:
+  db_data:
